@@ -1,5 +1,5 @@
 window.APP_CONFIG = {
-  API_BASE_URL: "PASTE_WEBAPP_URL_HERE",
+  API_BASE_URL: "https://script.google.com/macros/s/AKfycbxYYmBO72VXBViV_yNPQg8jykgGQj00Cbdko-i21e_S0hLOVCtXEaxHo7E6Ui_l6w3I/exec",
 };
 
 async function apiCall(action, payload) {
