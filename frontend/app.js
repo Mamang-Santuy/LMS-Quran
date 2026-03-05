@@ -8,14 +8,24 @@ async function apiCall(action, payload) {
   }
 
   const token = localStorage.getItem("lms_token") || "";
+
   const res = await fetch(window.APP_CONFIG.API_BASE_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, token, payload: payload || {} }),
+    mode: "cors",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify({
+      action: action,
+      token: token,
+      payload: payload || {}
+    })
   });
 
   const json = await res.json();
+
   if (!json.ok) throw new Error(json.message || "API error");
+
   return json.data;
 }
 
