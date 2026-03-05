@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../styles/tailwind.css" />
+</head>
+<body class="min-h-screen">
+  <div class="md:flex">
+    <aside class="md:w-64 bg-slate-900 text-white p-4 md:min-h-screen">
+      <div class="flex items-center justify-between md:block">
+        <h2 class="text-xl font-bold">Menu Admin</h2>
+        <button onclick="logout()" class="text-sm bg-white/15 rounded px-2 py-1">Logout</button>
+      </div>
+      <nav class="mt-4 grid gap-2">
+        <a class="sidebar-link active" href="#">Dashboard</a>
+        <a class="sidebar-link" href="#approval">Request Ujian</a>
+        <a class="sidebar-link" href="#kafalah">Kafalah Guru</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-4 md:p-6 space-y-4">
+      <div class="card p-4">
+        <h1 class="text-xl font-bold">Dashboard Administrator</h1>
+        <p id="adminInfo" class="text-slate-500 text-sm mt-1"></p>
+      </div>
+
+      <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="card p-4"><p class="text-xs text-slate-500">Santri Aktif</p><p id="s1" class="text-xl font-bold">-</p></div>
+        <div class="card p-4"><p class="text-xs text-slate-500">Guru Aktif</p><p id="s2" class="text-xl font-bold">-</p></div>
+        <div class="card p-4"><p class="text-xs text-slate-500">Santri Lulus</p><p id="s3" class="text-xl font-bold">-</p></div>
+        <div class="card p-4"><p class="text-xs text-slate-500">Req Pending</p><p id="s4" class="text-xl font-bold">-</p></div>
+      </section>
+
+      <section id="approval" class="card p-4 overflow-auto">
+        <h3 class="font-bold">Approval Request Ujian</h3>
+        <table class="w-full mt-3 text-sm">
+          <thead><tr class="text-left border-b"><th class="py-2">ID</th><th>Santri</th><th>Guru</th><th>Status</th><th>Aksi</th></tr></thead>
+          <tbody id="reqBody"></tbody>
+        </table>
+      </section>
+
+      <section id="kafalah" class="card p-4 overflow-auto">
+        <h3 class="font-bold">Kafalah Guru</h3>
+        <table class="w-full mt-3 text-sm">
+          <thead><tr class="text-left border-b"><th class="py-2">Guru ID</th><th>Bulan</th><th>Jumlah</th><th>Status</th></tr></thead>
+          <tbody id="kafalahBody"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = requireAuth();
+    if (!user || user.role !== "ADMIN") window.location.href = "dashboard.html";
+    document.getElementById("adminInfo").innerText = user.nama + " (" + user.role + ")";
+
+    async function approve(requestId, status) {
+      await apiCall("approveUjian", { request_id: requestId, status: status });
+      loadAll();
+    }
+
+    async function loadAll() {
+      const [stats, kafalah] = await Promise.all([
+        apiCall("getDashboardStats"),
+        apiCall("getKafalah"),
+      ]);
+
+      document.getElementById("s1").innerText = stats.jumlahSantriAktif || 0;
+      document.getElementById("s2").innerText = stats.jumlahGuruAktif || 0;
+      document.getElementById("s3").innerText = stats.jumlahSantriLulus || 0;
+      document.getElementById("s4").innerText = stats.requestUjianPending || 0;
+
+      const reqRows = await apiCall("getRawRequestUjianForAdmin", {});
+      document.getElementById("reqBody").innerHTML = reqRows.map(function (r) {
+        const btn = r.status === "pending"
+          ? '<button class="px-2 py-1 bg-emerald-700 text-white rounded mr-1" onclick="approve(\'' + r.id + '\',\'approved\')">Approve</button><button class="px-2 py-1 bg-red-700 text-white rounded" onclick="approve(\'' + r.id + '\',\'rejected\')">Reject</button>'
+          : '-';
+        return '<tr class="border-b"><td class="py-2">' + r.id + '</td><td>' + r.santri_id + '</td><td>' + r.guru_id + '</td><td>' + r.status + '</td><td>' + btn + '</td></tr>';
+      }).join("");
+
+      document.getElementById("kafalahBody").innerHTML = kafalah.map(function (k) {
+        return '<tr class="border-b"><td class="py-2">' + k.guru_id + '</td><td>' + k.bulan + '</td><td>' + fmtCurrency(k.jumlah) + '</td><td>' + k.status + '</td></tr>';
+      }).join("");
+    }
+
+    loadAll().catch(function (e) { alert(e.message); });
+  </script>
+</body>
+</html>

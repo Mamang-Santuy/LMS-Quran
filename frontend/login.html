@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login LMS Qur'an</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../styles/tailwind.css" />
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md card p-6 sm:p-8">
+    <h1 class="text-2xl font-extrabold text-center">LMS Bimbel Al-Qur'an</h1>
+    <p class="text-center text-slate-500 mt-1">Login dengan username & password</p>
+
+    <form id="loginForm" class="mt-6 space-y-4">
+      <div>
+        <label class="text-sm font-semibold">Username</label>
+        <input id="username" required class="w-full border rounded-xl px-3 py-2 mt-1" placeholder="Masukkan username" />
+      </div>
+      <div>
+        <label class="text-sm font-semibold">Password</label>
+        <input id="password" type="password" required class="w-full border rounded-xl px-3 py-2 mt-1" placeholder="Masukkan password" />
+      </div>
+      <button class="btn-primary w-full rounded-xl py-2.5 font-bold" type="submit">Masuk</button>
+      <p id="errorMsg" class="text-sm text-red-600 hidden"></p>
+    </form>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const errorEl = document.getElementById("errorMsg");
+      errorEl.classList.add("hidden");
+
+      try {
+        const data = await apiCall("loginUser", {
+          username: document.getElementById("username").value,
+          password: document.getElementById("password").value,
+        });
+
+        saveSession(data);
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        errorEl.innerText = err.message;
+        errorEl.classList.remove("hidden");
+      }
+    });
+  </script>
+</body>
+</html>

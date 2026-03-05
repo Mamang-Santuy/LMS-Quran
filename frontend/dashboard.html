@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Redirect</title>
+</head>
+<body>
+  <script src="app.js"></script>
+  <script>
+    (function () {
+      const user = requireAuth();
+      if (!user) return;
+
+      if (user.role === "GURU") window.location.href = "guru.html";
+      else if (user.role === "ADMIN") window.location.href = "admin.html";
+      else if (user.role === "SAYID") window.location.href = "sayid.html";
+      else {
+        clearSession();
+        window.location.href = "login.html";
+      }
+    })();
+  </script>
+</body>
+</html>

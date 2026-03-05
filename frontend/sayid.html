@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Sayid</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../styles/tailwind.css" />
+</head>
+<body class="min-h-screen p-4 md:p-6">
+  <div class="card p-4 md:p-6">
+    <div class="flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-extrabold">Dashboard SAYID (Super Admin)</h1>
+        <p id="sayidInfo" class="text-slate-500"></p>
+      </div>
+      <button onclick="logout()" class="btn-primary rounded-xl px-4 py-2">Logout</button>
+    </div>
+
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+      <div class="card p-4 border"><p class="text-xs text-slate-500">Santri Aktif</p><p id="a1" class="text-xl font-bold">-</p></div>
+      <div class="card p-4 border"><p class="text-xs text-slate-500">Guru Aktif</p><p id="a2" class="text-xl font-bold">-</p></div>
+      <div class="card p-4 border"><p class="text-xs text-slate-500">Santri Lulus</p><p id="a3" class="text-xl font-bold">-</p></div>
+      <div class="card p-4 border"><p class="text-xs text-slate-500">Req Pending</p><p id="a4" class="text-xl font-bold">-</p></div>
+    </section>
+
+    <section class="mt-6 grid md:grid-cols-2 gap-4">
+      <div class="card p-4 border">
+        <h3 class="font-bold">Akses Super Admin</h3>
+        <ul class="mt-2 text-sm text-slate-600 list-disc pl-5">
+          <li>Manajemen akun, guru, santri, kurikulum</li>
+          <li>Monitoring progress, ujian, dan laporan kafalah</li>
+          <li>Akses penuh lintas role</li>
+        </ul>
+      </div>
+      <div class="card p-4 border">
+        <h3 class="font-bold">Riwayat Belajar Santri</h3>
+        <p class="text-sm text-slate-600 mt-2">Gunakan endpoint backend untuk menampilkan detail progres + ujian per santri di modul laporan.</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = requireAuth();
+    if (!user || user.role !== "SAYID") window.location.href = "dashboard.html";
+    document.getElementById("sayidInfo").innerText = user.nama + " (" + user.role + ")";
+
+    apiCall("getDashboardStats").then(function (stats) {
+      document.getElementById("a1").innerText = stats.jumlahSantriAktif || 0;
+      document.getElementById("a2").innerText = stats.jumlahGuruAktif || 0;
+      document.getElementById("a3").innerText = stats.jumlahSantriLulus || 0;
+      document.getElementById("a4").innerText = stats.requestUjianPending || 0;
+    }).catch(function (e) {
+      alert(e.message);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Guru</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../styles/tailwind.css" />
+</head>
+<body class="min-h-screen">
+  <div class="md:flex">
+    <aside class="md:w-64 bg-emerald-900 text-white p-4 md:min-h-screen">
+      <div class="flex items-center justify-between md:block">
+        <h2 class="text-xl font-bold">Menu Guru</h2>
+        <button onclick="logout()" class="text-sm bg-white/15 rounded px-2 py-1">Logout</button>
+      </div>
+      <nav class="mt-4 grid gap-2">
+        <a class="sidebar-link active" href="#">Dashboard</a>
+        <a class="sidebar-link" href="#formProgress">Progress Harian</a>
+        <a class="sidebar-link" href="#formRequest">Request Ujian</a>
+        <a class="sidebar-link" href="#kafalah">Kafalah Saya</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-4 md:p-6 space-y-4">
+      <div class="card p-4">
+        <h1 class="text-xl font-bold">Dashboard Guru</h1>
+        <p id="guruInfo" class="text-slate-500 text-sm mt-1"></p>
+      </div>
+
+      <section class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="card p-4"><p class="text-sm text-slate-500">Jumlah Santri</p><p id="statSantri" class="text-2xl font-bold">-</p></div>
+        <div class="card p-4"><p class="text-sm text-slate-500">Progress Minggu Ini</p><p id="statProgress" class="text-2xl font-bold">-</p></div>
+        <div class="card p-4"><p class="text-sm text-slate-500">Request Pending</p><p id="statReq" class="text-2xl font-bold">-</p></div>
+      </section>
+
+      <section id="formProgress" class="card p-4">
+        <h3 class="font-bold">Input Progress Harian</h3>
+        <form id="progressForm" class="grid sm:grid-cols-2 gap-3 mt-3">
+          <input id="pTanggal" type="date" class="border rounded-xl px-3 py-2" required />
+          <select id="pSantri" class="border rounded-xl px-3 py-2" required></select>
+          <input id="pMateri" class="border rounded-xl px-3 py-2 sm:col-span-2" placeholder="Materi" required />
+          <textarea id="pCatatan" class="border rounded-xl px-3 py-2 sm:col-span-2" rows="2" placeholder="Catatan"></textarea>
+          <button class="btn-primary rounded-xl py-2 font-bold sm:col-span-2">Simpan Progress</button>
+        </form>
+      </section>
+
+      <section id="formRequest" class="card p-4">
+        <h3 class="font-bold">Request Ujian</h3>
+        <form id="requestForm" class="grid sm:grid-cols-2 gap-3 mt-3">
+          <select id="rSantri" class="border rounded-xl px-3 py-2" required></select>
+          <button class="btn-primary rounded-xl py-2 font-bold">Kirim Request</button>
+        </form>
+      </section>
+
+      <section class="card p-4">
+        <h3 class="font-bold">Input Hasil Ujian</h3>
+        <form id="hasilForm" class="grid sm:grid-cols-2 gap-3 mt-3">
+          <select id="hSantri" class="border rounded-xl px-3 py-2" required></select>
+          <select id="hNilai" class="border rounded-xl px-3 py-2" required>
+            <option value="LULUS">LULUS</option>
+            <option value="REMEDIAL">REMEDIAL</option>
+          </select>
+          <textarea id="hCatatan" class="border rounded-xl px-3 py-2 sm:col-span-2" rows="2" placeholder="Catatan"></textarea>
+          <button class="btn-primary rounded-xl py-2 font-bold sm:col-span-2">Simpan Hasil</button>
+        </form>
+      </section>
+
+      <section id="kafalah" class="card p-4 overflow-auto">
+        <h3 class="font-bold">Kafalah Saya</h3>
+        <table class="w-full mt-3 text-sm">
+          <thead><tr class="text-left border-b"><th class="py-2">Bulan</th><th>Jumlah</th><th>Status</th><th>Tanggal Transfer</th></tr></thead>
+          <tbody id="kafalahBody"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = requireAuth();
+    if (!user || user.role !== "GURU") window.location.href = "dashboard.html";
+    document.getElementById("guruInfo").innerText = user.nama + " (" + user.role + ")";
+
+    async function loadAll() {
+      const [stats, santri, kafalah] = await Promise.all([
+        apiCall("getDashboardStats"),
+        apiCall("getSantriByGuru"),
+        apiCall("getKafalah"),
+      ]);
+
+      document.getElementById("statSantri").innerText = stats.jumlahSantri || 0;
+      document.getElementById("statProgress").innerText = stats.progressMingguIni || 0;
+      document.getElementById("statReq").innerText = stats.requestUjianPending || 0;
+
+      const opts = santri.map(function (s) {
+        return '<option value="' + s.id_santri + '">' + s.nama + ' - ' + s.level + '</option>';
+      }).join("");
+      ["pSantri", "rSantri", "hSantri"].forEach(function (id) {
+        document.getElementById(id).innerHTML = opts;
+      });
+
+      document.getElementById("kafalahBody").innerHTML = kafalah.map(function (k) {
+        return '<tr class="border-b"><td class="py-2">' + k.bulan + '</td><td>' + fmtCurrency(k.jumlah) + '</td><td>' + k.status + '</td><td>' + (k.tanggal_transfer || '-') + '</td></tr>';
+      }).join("");
+    }
+
+    document.getElementById("progressForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      await apiCall("saveProgress", {
+        tanggal: document.getElementById("pTanggal").value,
+        santri_id: document.getElementById("pSantri").value,
+        materi: document.getElementById("pMateri").value,
+        catatan: document.getElementById("pCatatan").value,
+      });
+      alert("Progress tersimpan");
+      this.reset();
+      loadAll();
+    });
+
+    document.getElementById("requestForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      await apiCall("requestUjian", { santri_id: document.getElementById("rSantri").value });
+      alert("Request ujian dikirim");
+      loadAll();
+    });
+
+    document.getElementById("hasilForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const res = await apiCall("saveHasilUjian", {
+        santri_id: document.getElementById("hSantri").value,
+        nilai: document.getElementById("hNilai").value,
+        catatan: document.getElementById("hCatatan").value,
+        tanggal: new Date().toISOString(),
+      });
+      alert(res.levelUpdatedTo ? "Hasil disimpan. Level naik ke " + res.levelUpdatedTo : "Hasil disimpan");
+      this.reset();
+      loadAll();
+    });
+
+    loadAll().catch(function (e) {
+      alert(e.message);
+    });
+  </script>
+</body>
+</html>
